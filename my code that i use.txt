@@ -1,0 +1,340 @@
+package se.ler.apcpre.classes
+
+import android.content.ContentValues
+import android.database.Cursor
+import android.database.sqlite.SQLiteDatabase
+import android.database.sqlite.SQLiteStatement
+import android.util.Log
+import se.ler.apcpre.classes.*
+import kotlin.math.absoluteValue
+
+class Sqli {
+    companion object {
+        fun create(mdb: SQLiteDatabase){
+            try {
+                mdb.execSQL(
+                    """CREATE TABLE """ + DB.tbHdmManual + """ (
+                                        id       INTEGER    PRIMARY KEY AUTOINCREMENT,
+                                        url      CHAR (250) DEFAULT "",
+                                        [action] CHAR (50)  DEFAULT "",
+                                        license  CHAR (50)  DEFAULT "",
+                                        group_id INT        DEFAULT (0),
+                                        timeout  INT        DEFAULT (0)
+                                        );"""
+                )
+                mdb.execSQL(
+                    """INSERT INTO """ + DB.tbHdmManual + """ (url) VALUES('');"""
+                )
+                mdb.execSQL(
+                    """CREATE TABLE """ + DB.tbHdmOnce + """ (
+                                        id         INTEGER    PRIMARY KEY AUTOINCREMENT,
+                                        profile_id INT        DEFAULT (0),
+                                        url        CHAR (250) DEFAULT "",
+                                        update_url CHAR (250) DEFAULT ""
+                                        );"""
+                )
+                mdb.execSQL(
+                    """CREATE TABLE """ + DB.tbHdmDevices + """ (
+                                        id                   INTEGER    PRIMARY KEY AUTOINCREMENT,
+                                        device_id            INT        DEFAULT (0),
+                                        ip_address           CHAR (50)  DEFAULT "",
+                                        ip_port              INT        DEFAULT (0),
+                                        secure_key           CHAR (50)  DEFAULT "",
+                                        comment              CHAR (250) DEFAULT "",
+                                        profile_nic          CHAR (250) DEFAULT "",
+                                        hdm_protocol         INT        DEFAULT (0),
+                                        hdm_cashier          INT        DEFAULT (0),
+                                        hdm_cashier_password CHAR (20)  DEFAULT "",
+                                        hdm_department       INT        DEFAULT (0),
+                                        type                 CHAR (100) DEFAULT ""
+                                        );"""
+                )
+                mdb.execSQL(
+                    """CREATE INDEX device_id_index ON """ + DB.tbHdmDevices + """ (
+                                            device_id
+                                        );"""
+                )
+
+                mdb.execSQL(
+                    """CREATE TABLE [""" + DB.tbEtc + """] (
+                                        id                       INTEGER    PRIMARY KEY AUTOINCREMENT,
+                                        url_web                  CHAR (250) DEFAULT "",
+                                        inet_detect_addr         CHAR (50)  DEFAULT "",
+                                        inet_detect_port         INT        DEFAULT (0),
+                                        show_process_details     INT        DEFAULT (0),
+                                        waker_dot                INT        DEFAULT (0),
+                                        controller_success_url   CHAR (250) DEFAULT "",
+                                        controller_error_url     CHAR (250) DEFAULT "",
+                                        controller_loop_count    INT  DEFAULT (3),
+                                        controller_loop_ml       INT  DEFAULT (1000),
+                                        log_limit                INT  DEFAULT (10000),
+                                        log_limit_after_clean    INT  DEFAULT (5000)
+                                        );"""
+                )
+                mdb.execSQL(
+                    """INSERT INTO [""" + DB.tbEtc + """] (url_web, inet_detect_addr, inet_detect_port, controller_success_url, controller_error_url) VALUES('http://cloud2.xxxx.am/v10','google.com',80,'','');""".trimMargin()
+                )
+
+                mdb.execSQL(
+                    """CREATE TABLE """ + DB.tbHdmLog + """ (id   INTEGER    PRIMARY KEY AUTOINCREMENT,
+                                             [dt]  DATETIME   DEFAULT "0000-00-00 00:00:00",
+                                             [mod] CHAR (7)   DEFAULT "",
+                                             [state] CHAR (200)   DEFAULT "",
+                                             [message] CHAR (250) DEFAULT ""
+                                             );"""
+                )
+                mdb.execSQL(
+                    """CREATE INDEX dt_index ON """ + DB.tbHdmLog + """ (
+                                        dt
+                                        );"""
+                )
+            }
+            catch(e:Exception) {
+                println(e.message.toString())
+            }
+            //mdb.close();
+        }
+
+
+
+        fun alter(mdb: SQLiteDatabase, sql: String){
+            try {
+                mdb.execSQL(
+                    sql
+                );
+            }
+            catch(e:Exception) {
+                Log.d("esem", e.message.toString())
+            }
+            //mdb.close();
+        }
+
+        fun insert(mdb: SQLiteDatabase) {
+            try {
+                val row1 = ContentValues()
+                row1.put("name", "Tadevos")
+                row1.put("family", "Sailyan")
+                row1.put("age", 33)
+                mdb.insert("test", null, row1);
+            }
+            catch(e:Exception) {
+                Log.d("esem", e.message.toString())
+            }
+            //mdb.close();
+        }
+
+        fun insertByPair(mdb: SQLiteDatabase, table:String, pairList: ArrayList<Pair<String, kotlin.Any>>){
+            var sql = "INSERT INTO [${table}] "
+            var fields = mutableListOf<String>()
+            var values = mutableListOf<kotlin.Any>()
+            for (item in pairList) {
+                val (key, value) = item
+                fields.add("[${key}]")
+                values.add("'${value}'")
+            }
+            sql += "(" + fields.joinToString(",") + ") VALUES (" + values.joinToString(",") + ")"
+            println("sql = " + sql)
+
+            try {
+                mdb.execSQL(
+                    sql
+                );
+            }
+            catch(e:Exception) {
+                println("InsertException: " + e.message.toString())
+                Log.d("esem", e.message.toString())
+            }
+            //mdb.close();
+        }
+
+        fun updateByPair(mdb: SQLiteDatabase, table:String, pairList: ArrayList<Pair<String, kotlin.Any>>, wh:String="1"){
+            var sql = "UPDATE [${table}] SET "
+            var parts = mutableListOf<String>()
+            for (item in pairList) {
+                val (key, value) = item
+                parts.add("[${key}]='${value}'")
+            }
+            sql += parts.joinToString(",")
+            sql += " WHERE ${wh}"
+            println("sql = " + sql)
+
+            try {
+                mdb.execSQL(
+                    sql
+                );
+            }
+            catch(e:Exception) {
+                Log.d("esem", e.message.toString())
+            }
+            //mdb.close();
+        }
+
+        fun delete(mdb: SQLiteDatabase, table: String, wh:String="1"){
+            try {
+                mdb.execSQL(
+                    "DELETE FROM [${table}] WHERE ${wh}"
+                );
+            }
+            catch(e:Exception) {
+                Log.d("esem", e.message.toString())
+            }
+            //mdb.close();
+        }
+
+        fun truncate(mdb: SQLiteDatabase, table: String){
+            this.delete(mdb, table)
+            try {
+                mdb.execSQL(
+                    "UPDATE SQLITE_SEQUENCE SET seq=0 WHERE name='${table}'"
+                );
+            }
+            catch(e:Exception) {
+                Log.d("esem", e.message.toString())
+            }
+            //mdb.close();
+        }
+
+        fun select(mdb: SQLiteDatabase, sql: String):String {
+            var res = ""
+
+            try {
+                val myCursor: Cursor = mdb.rawQuery(sql, null)
+                while (myCursor.moveToNext()) {
+                    /**
+                    //by number
+                    val id = myCursor.getString(0)
+                    val name = myCursor.getString(1)
+                    val family = myCursor.getString(2)
+                    val age = myCursor.getInt(3)
+                     */
+
+                    //by key
+                    val id = myCursor.getString(myCursor.getColumnIndex("id").absoluteValue)
+                    val name = myCursor.getString(myCursor.getColumnIndex("name").absoluteValue)
+                    val family = myCursor.getString(myCursor.getColumnIndex("family").absoluteValue)
+                    val age = myCursor.getString(myCursor.getColumnIndex("age").absoluteValue)
+
+                    res += "[Id: $id] [name: $name] [family: $family] [age: $age]\n"
+                }
+                myCursor.close();
+                //mdb.close();
+            }
+            catch(e:Exception) {
+                println(e.message.toString())
+            }
+            return res
+        }
+
+        fun getStrings(mdb: SQLiteDatabase): MutableMap<String, String>{
+            var res = mutableMapOf<String, String>()
+
+            try {
+                val myCursor: Cursor = mdb.rawQuery("SELECT * FROM [strings]", null)
+                while (myCursor.moveToNext()) {
+                    val key = myCursor.getString(myCursor.getColumnIndex("key").absoluteValue)
+                    val value = myCursor.getString(myCursor.getColumnIndex("value").absoluteValue)
+
+                    res.put(key, value)
+                }
+                myCursor.close();
+                //mdb.close();
+            }
+            catch(e:Exception) {
+                println(e.message.toString())
+            }
+            return res
+        }
+
+        fun getRec(mdb: SQLiteDatabase, table: String): MutableMap<String, kotlin.Any>{
+            var res = mutableMapOf<String, kotlin.Any>()
+
+            try {
+                val myCursor: Cursor = mdb.rawQuery("SELECT * FROM [$table]", null)
+                while (myCursor.moveToNext()) {
+                    for (i in 0..myCursor.columnCount-1) {
+                        res.put(myCursor.getColumnName(i), myCursor.getString(myCursor.getColumnIndex(myCursor.getColumnName(i)).absoluteValue))
+                    }
+                }
+                myCursor.close()
+                //mdb.close()
+            }
+            catch(e:Exception) {
+                println(e.message.toString())
+            }
+            return res
+        }
+
+        fun getRecs(mdb: SQLiteDatabase, table: String): HashMap<Int, HashMap<String, kotlin.Any>>{
+            val res: HashMap<Int, HashMap<String, kotlin.Any>> = HashMap()
+
+            try {
+                val myCursor: Cursor = mdb.rawQuery("SELECT * FROM [$table]", null)
+                var i = 0
+                while (myCursor.moveToNext()) {
+                    val items: HashMap<String, kotlin.Any> = HashMap()
+                    for (j in 0..myCursor.columnCount-1) {
+                        items.put(myCursor.getColumnName(j), myCursor.getString(myCursor.getColumnIndex(myCursor.getColumnName(j)).absoluteValue))
+                    }
+                    res[i] = items
+                    ++i
+                }
+                myCursor.close()
+                //mdb.close()
+            }
+            catch(e:Exception) {
+                println(e.message.toString())
+            }
+            return res
+        }
+
+        fun sel(mdb: SQLiteDatabase, sql: String): MutableMap<String, kotlin.Any>{
+            var res = mutableMapOf<String, kotlin.Any>()
+
+            try {
+                val myCursor: Cursor = mdb.rawQuery(sql, null)
+                while (myCursor.moveToNext()) {
+                    for (i in 0..myCursor.columnCount-1) {
+                        res.put(myCursor.getColumnName(i), myCursor.getString(myCursor.getColumnIndex(myCursor.getColumnName(i)).absoluteValue))
+                    }
+                }
+                myCursor.close()
+                //mdb.close()
+            }
+            catch(e:Exception) {
+                println(e.message.toString())
+            }
+            return res
+        }
+
+        fun stringsVal(mdb: SQLiteDatabase, key: String):String {
+            var res = ""
+
+            try {
+                val myCursor: Cursor = mdb.rawQuery("SELECT value FROM [strings] WHERE [key]='${key}' LIMIT 1", null)
+                while (myCursor.moveToNext()) {
+                    res = myCursor.getString(myCursor.getColumnIndex("value").absoluteValue)
+                }
+                myCursor.close();
+                //mdb.close();
+            }
+            catch(e:Exception) {
+                println(e.message.toString())
+            }
+            return res
+        }
+
+        fun count(mdb: SQLiteDatabase, table:String): Long {
+            var res:Long = 0
+
+            try {
+                var statement: SQLiteStatement = mdb.compileStatement("SELECT COUNT(*) FROM [${table}]")
+                res = statement.simpleQueryForLong()
+                //mdb.close();
+            }
+            catch(e:Exception) {
+                println(e.message.toString())
+            }
+            return res
+        }
+    }
+}
